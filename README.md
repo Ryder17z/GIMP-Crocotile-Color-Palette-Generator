@@ -1,5 +1,5 @@
 # GIMP/Crocottile Color Palette Generator
-"Hardcoded" C++ application script to generate a palette file for GIMP &amp; Crocotile 3d. Also outputs a preview in HTML format.
+"Hardcoded" C++ application/script to generate a palette file for GIMP &amp; Crocotile 3d. Also outputs a preview in HTML format.
 
 Was written using VS Code on linux. Compiling on Windows is untested but should work fine.
 
