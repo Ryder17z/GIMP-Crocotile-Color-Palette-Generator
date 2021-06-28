@@ -6,6 +6,8 @@ Was written using VS Code on linux. Compiling on Windows is untested but should 
 
 Easy to modify if a different color palette is desired. Sample:
 
-[Link to full HTML preview with the default sample](https://ryder17z.github.io/GIMP-Crocotile-Color-Palette-Generator/)
+[Full HTML preview with the default sample](https://ryder17z.github.io/GIMP-Crocotile-Color-Palette-Generator/) 
+ || 
+[Github repository](https://github.com/Ryder17z/GIMP-Crocotile-Color-Palette-Generator)
 
 ![image](https://user-images.githubusercontent.com/2000703/123696356-f640d680-d85b-11eb-9282-2350a1dd99fa.png)
