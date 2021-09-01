@@ -294,7 +294,7 @@ int main()
         }
     }
 
-	std::cout << "GIMP Palette\n" << "Name: Extensive Palette\n" << "Colors: " << total_colors << "\n";
+	std::cout << "GIMP Palette\n" << "Name:" << PALETTE_NAME << "\n" << "Colors: " << total_colors << "\n";
 
 	htmlFile << "</div></div><div style=\"position:absolute; left:20px; top:105px;\">Colors: " << total_colors << "<div><br></body></html>\n";
 	jsonFile << "]"; // EOF
