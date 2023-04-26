@@ -6,6 +6,12 @@
 #include <algorithm>
 #include <fstream>
 #include <string>
+#include <math.h>
+#include <cstring>
+#include <unordered_set>
+#include <set>
+#include <tuple>
+#include "app_exit.hpp"
 
 // filename.ext
 #define OUTPUT_FILENAME "color_palette.gpl"
@@ -13,133 +19,72 @@
 #define HTML_FILENAME "preview.html"
 #define JSON_FILENAME "color_palette.json.c3dpal"
 
-// Pause methods
-#ifdef _WIN32
-// For windows
-void waitForAnyKey() {
-    system("pause");
-}
-#elif __linux__
-// For linux
-void waitForAnyKey() {
-    std::cout << "Press any key to continue...";
-    system("read -s -N 1"); // Continues when pressed a key like windows
-}
-#endif
-
-void APP_EXIT_IO_FAIL()
-{
-	printf ("Error Writing to output.file\nPlease verify file/folder R/W permissions\nThe application will now exit.\n\n");
-	waitForAnyKey();
-	exit(0); // RW failure
-}
-
-float fmin3(float a, float b, float c) {
-    return std::min(a, std::min(b, c));
-}
-float fmax3(float a, float b, float c) {
-    return std::max(a, std::max(b, c));
-}
-
 // r,g,b values are from 0 to 1
 // h = [0,360], s = [0,1], v = [0,1]
 //		if s == 0, then h = -1 (undefined)
 
-void RGBtoHSV( float r, float g, float b, float &h, float &s, float &v )
-{
-	float min, max, delta;
-
-	min = fmin3( r, g, b );
-	max = fmax3( r, g, b );
-	v = max;				// v
-
-	delta = max - min;
-
-	if( max != 0 )
-		s = delta / max;		// s
-	else {
-		// r = g = b = 0		// s = 0, v is undefined
-		s = 0;
-		h = -1;
-		return;
-	}
-
-	if( r == max )
-		h = ( g - b ) / delta;		// between yellow & magenta
-	else if( g == max )
-		h = 2 + ( b - r ) / delta;	// between cyan & yellow
-	else
-		h = 4 + ( r - g ) / delta;	// between magenta & cyan
-
-	h *= 60;				// degrees
-	if( h < 0 )
-		h += 360;
-
-}
-
-void HSVtoRGB( float &r, float &g, float &b, float &h, float &s, float &v )
+void HSVtoRGB(float h, float s, float v, uint8_t& r, uint8_t& g, uint8_t& b)
 {
 	int i;
 	float f, p, q, t;
 
-	if( s == 0 ) {
+	if (s == 0) {
 		// achromatic (grey)
-		r = g = b = v;
+		r = g = b = v * 255.0;
 		return;
 	}
 
 	h /= 60;			// sector 0 to 5
-	i = floor( h );
+	i = floor(h);
 	f = h - i;			// factorial part of h
-	p = v * ( 1 - s );
-	q = v * ( 1 - s * f );
-	t = v * ( 1 - s * ( 1 - f ) );
+	p = v * (1 - s);
+	q = v * (1 - s * f);
+	t = v * (1 - s * (1 - f));
 
-	switch( i ) {
-		case 0:
-			r = v;
-			g = t;
-			b = p;
-			break;
-		case 1:
-			r = q;
-			g = v;
-			b = p;
-			break;
-		case 2:
-			r = p;
-			g = v;
-			b = t;
-			break;
-		case 3:
-			r = p;
-			g = q;
-			b = v;
-			break;
-		case 4:
-			r = t;
-			g = p;
-			b = v;
-			break;
-		default:		// case 5:
-			r = v;
-			g = p;
-			b = q;
-			break;
+	switch (i) {
+	case 0:
+		r = v * 255.0;
+		g = t * 255.0;
+		b = p * 255.0;
+		break;
+	case 1:
+		r = q * 255.0;
+		g = v * 255.0;
+		b = p * 255.0;
+		break;
+	case 2:
+		r = p * 255.0;
+		g = v * 255.0;
+		b = t * 255.0;
+		break;
+	case 3:
+		r = p * 255.0;
+		g = q * 255.0;
+		b = v * 255.0;
+		break;
+	case 4:
+		r = t * 255.0;
+		g = p * 255.0;
+		b = v * 255.0;
+		break;
+	default:
+		r = v * 255.0;
+		g = p * 255.0;
+		b = q * 255.0;
+		break;
 	}
-
 }
 
-int colorval_r = 3;
-int colorval_g = 3;
-int colorval_b = 3;
+int colorval_r = 0;
+int colorval_g = 0;
+int colorval_b = 0;
 int total_colors = 0;
 
 void reset_color()
 {
-    colorval_r = 3;
-    colorval_g = 3;
-    colorval_b = 3;
+    colorval_r = 0;
+    colorval_g = 0;
+    colorval_b = 0;
 }
 
 void WriteColor(std::ofstream &fp, int color_index)
@@ -156,48 +101,91 @@ void HTML_WriteColor(std::ofstream &fhtml, int color_index)
 	fhtml << "<span style=\"display:inline; background-color: rgb(" << colorval_r << ", " << colorval_g << ", " << colorval_b << "); padding: 4px; border: 4px solid black;\">&nbsp;&nbsp;&nbsp;</span>\n";
 }
 
-void JSON_WriteColor(std::ofstream &fjson, bool lastcolor)
+void JSON_WriteColor(std::ofstream& fjson)
 {
-	if(!fjson.is_open())
+	if (!fjson.is_open())
 	{
 		APP_EXIT_IO_FAIL();
 	}
+	if (total_colors != 0) fjson << ",";
 	fjson << "{\"r\":" << colorval_r << ",\"g\":" << colorval_g << ",\"b\":" << colorval_b << "}";
-	if(!lastcolor) fjson << ",";
 }
 
 void PrintColor()
 {
-    std::cout << colorval_r << "\t" << colorval_g << "\t" << colorval_b << "\n";
+	std::cout << colorval_r << "\t" << colorval_g << "\t" << colorval_b << "\n";
 }
 
-void CreateColor(int _RED_COLOR, int _GREEN_COLOR, int _BLUE_COLOR, float __SHIFTHUE, float __SHIFTSAT, float __SHIFTVEL, std::ofstream &fp, int color_index, std::ofstream &fhtml, std::ofstream &fjson, bool lastcolor)
-{
-	float HUE, SAT, VEL, reds, greens, blues;
+std::set<std::tuple<int, int, int>> color_set; // Declare a set to keep track of generated colors
 
-    RGBtoHSV( (float) _RED_COLOR/255.0, (float) _GREEN_COLOR/255.0, (float) _BLUE_COLOR/255.0, HUE, SAT, VEL );
+struct TupleHash {
+    std::size_t operator()(const std::tuple<uint8_t, uint8_t, uint8_t>& t) const {
+        auto hash1 = std::hash<uint8_t>{}(std::get<0>(t));
+        auto hash2 = std::hash<uint8_t>{}(std::get<1>(t));
+        auto hash3 = std::hash<uint8_t>{}(std::get<2>(t));
+        return hash1 ^ hash2 ^ hash3;
+    }
+};
 
-    HUE += __SHIFTHUE;
-    SAT *= __SHIFTSAT;
-    VEL *= __SHIFTVEL;
+uint8_t RGB_Color[256 * 256 * 256][3];
 
-    HSVtoRGB( reds, greens, blues, HUE, SAT, VEL );
-
-    colorval_r = round(reds * 255.0); //!< Extract red
-    colorval_g = round(greens * 255.0); //!< Extract green
-    colorval_b = round(blues * 255.0); //!< Extract blue
-    
-    //std::cout << "[r]" << reds << "\t"<< "[g]" << greens << "\t"<< "[b]" << blues << "\n";
-    //PrintColor();
-    WriteColor(fp, color_index);
-	HTML_WriteColor(fhtml, color_index);
-	JSON_WriteColor(fjson, lastcolor);
-
-	total_colors++;
+float lerp(float a, float b, float t) {
+	return (1.0 - t) * a + t * b;
 }
 
-int main()
-{
+void Component(std::ofstream& fp, std::ofstream& fhtml, std::ofstream& fjson, int num_hues, int num_saturations, int num_velocities, std::tuple<float, float, float> start_color, std::tuple<float, float, float> end_color) {
+	int i, j, k;
+	std::unordered_set<std::tuple<uint8_t, uint8_t, uint8_t>, TupleHash> used_colors;
+
+	for (i = 0; i < num_hues; i++) {
+		float hue = std::get<0>(start_color) + i * (std::get<0>(end_color) - std::get<0>(start_color)) / (num_hues - 1);
+		for (j = 0; j < num_saturations; j++) {
+			float saturation = std::get<1>(start_color) + j * (std::get<1>(end_color) - std::get<1>(start_color)) / (num_saturations - 1);
+			for (k = 0; k < num_velocities; k++) {
+				float value = std::get<2>(start_color) + k * (std::get<2>(end_color) - std::get<2>(start_color)) / (num_velocities - 1);
+
+				// Convert HSV to RGB
+				uint8_t r, g, b;
+				HSVtoRGB(hue, saturation, value, r, g, b);
+
+				// Check if the color is unique
+				std::tuple<uint8_t, uint8_t, uint8_t> color_tuple(r, g, b);
+				if (used_colors.count(color_tuple) == 0) {
+					// Add the color to the set of used colors
+					used_colors.insert(color_tuple);
+
+					// Store the RGB values in the RGB_Color array
+					RGB_Color[total_colors][0] = r;
+					RGB_Color[total_colors][1] = g;
+					RGB_Color[total_colors][2] = b;
+
+					// Update the colorval variables for printing and JSON output
+					colorval_r = r;
+					colorval_g = g;
+					colorval_b = b;
+
+					// Write the color files
+					WriteColor(fp, total_colors);
+					HTML_WriteColor(fhtml, total_colors);
+					JSON_WriteColor(fjson);
+
+					// Print the color values to the console
+					//PrintColor();
+
+					// Increment the total number of colors generated
+					total_colors++;
+				}
+			}
+		}
+	}
+
+	// Print the generated colors
+	for (i = 0; i < num_hues * num_saturations * num_velocities; i++) {
+		printf("Color %d: RGB(%d, %d, %d)\n", i + 1, RGB_Color[i][0], RGB_Color[i][1], RGB_Color[i][2]);
+	}
+}
+
+int main() {
 	std::ofstream paletteFile;
 	paletteFile.open(OUTPUT_FILENAME, std::ofstream::out | std::ofstream::trunc);
 
@@ -218,90 +206,20 @@ int main()
 	htmlFile << "<html><head><meta charset=\"UTF-8\"><title>Color Palette Preview</title></head>\n<body>\n<div style=\"position:absolute; left:20px; top:20px;\">";
 	htmlFile << "GIMP Palette<br>" << "Name: " << PALETTE_NAME << "<br>" << "Columns: 4<br># Generated Using <a href=\"https://github.com/Ryder17z/GIMP-Crocotile-Color-Palette-Generator\">https://github.com/Ryder17z/GIMP-Crocotile-Color-Palette-Generator</a>\n</div><br><br><div style=\"position:absolute; left:20px; top:120px;\"><div>&nbsp;";
 
-	jsonFile << "["; // BOF
+    jsonFile << "["; // BOF
 
-    // ALL GRAY
-	CreateColor( 3, 3, 3,  1.0, 1.0, 0.0, paletteFile, total_colors, htmlFile, jsonFile, false); // add black
-	CreateColor( 25, 25, 25,  1.0, 1.0, 0.65, paletteFile, total_colors, htmlFile, jsonFile, false); // add darkest grey
-    int Feed_r = 253;
-    int Feed_g = 253;
-    int Feed_b = 253;
-	for(int VEL=1; VEL <= 10; VEL++)
-	{
-		int color_tmp[3] = { Feed_r, Feed_g, Feed_b };
-		
-		// skip certain known colors
-		if(VEL == 9) continue;
-		if(VEL == 8) continue;
-		if(VEL == 5) continue;
-		CreateColor( color_tmp[0], color_tmp[1], color_tmp[2],  1.0, 1.0, (double)(VEL/10.0), paletteFile, total_colors, htmlFile, jsonFile, false);
-		
-		// insert 2 extra colors
-		if(VEL == 1)
-		{
-			double tmpvel = ( (25 * 1.2) + 3 ) / 255.0 ;
-			CreateColor( color_tmp[0], color_tmp[1], color_tmp[2], 1.0, 1.0, tmpvel, paletteFile, total_colors, htmlFile, jsonFile, false);
-			tmpvel = ( (25 * 1.5) + 3 ) / 255.0 ;
-			CreateColor( color_tmp[0], color_tmp[1], color_tmp[2], 1.0, 1.0, tmpvel, paletteFile, total_colors, htmlFile, jsonFile, false);
-		}
-	}
-	reset_color();
-	
-    // Any color (red-yellown-green-blue)
-    Feed_r = 253;
-    Feed_g = 3;
-    Feed_b = 3;
+	memset(RGB_Color, 0, sizeof(RGB_Color));
 
-	int limit_c = 15; // hue
-	int limit_w = 10; // sat
-	int limit_v = 10; // vel
+	// Example start color: dark red
+	std::tuple<float, float, float> start_color = std::make_tuple(0.0, 1.0, 0.5);
+	// Example end color: light blue
+	std::tuple<float, float, float> end_color = std::make_tuple(210.0, 0.3, 0.8);
 
-    for(int c = 0; c <= limit_c; c++)
-    {
-        for(int w = 1; w <= limit_w; w++)
-        {
-			// skip certain known colors
-            if(w % 2) continue;
-			if(w == 3) continue;
-			if(w == 9) continue;
-			
-            // Determine Hue
-            double HU = c * 22.5;
-            for(int VEL=1; VEL <= limit_v; VEL++)
-            {
-				bool lastcol=false;
-				if(c == limit_c && w == limit_w && VEL == limit_v)
-				{
-					lastcol=true;
-				}
+    Component(paletteFile, htmlFile, jsonFile, 3, 3, 3, start_color, end_color);
 
-                int color_tmp[3] = { Feed_r, Feed_g, Feed_b };
-                
-                // skip certain known colors
-                if(VEL == 8) continue;
-                CreateColor( color_tmp[0], color_tmp[1], color_tmp[2], HU, (w*1.0)/10, (double)(VEL/10.0), paletteFile, total_colors, htmlFile, jsonFile, lastcol);
-                
-                // insert 2 extra colors
-                if(VEL == 1)
-                {
-                    double tmpvel = ( (25 * 1.2) + 3 ) / 255.0 ;
-                    CreateColor( color_tmp[0], color_tmp[1], color_tmp[2], HU, (w*1.0)/10, tmpvel, paletteFile, total_colors, htmlFile, jsonFile, false);
-                    tmpvel = ( (25 * 1.5) + 3 ) / 255.0 ;
-                    CreateColor( color_tmp[0], color_tmp[1], color_tmp[2], HU, (w*1.0)/10, tmpvel, paletteFile, total_colors, htmlFile, jsonFile, false);
-                }
-            }
-            reset_color();
-        }
-    }
+    jsonFile << "]"; // EOF
+    jsonFile.close();
 
-	std::cout << "GIMP Palette\n" << "Name:" << PALETTE_NAME << "\n" << "Colors: " << total_colors << "\n";
-
-	htmlFile << "</div></div><div style=\"position:absolute; left:20px; top:105px;\">Colors: " << total_colors << "<div><br></body></html>\n";
-	jsonFile << "]"; // EOF
-	
-	paletteFile.close();
-	htmlFile.close();
-	jsonFile.close();
-
+	std::cout << "Colors: " << total_colors << "\n";
     return 0;
 }
