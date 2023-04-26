@@ -2,8 +2,10 @@
 "Hardcoded" C++ application/script to generate a palette file for GIMP &amp; Crocotile 3d. Also outputs a preview in HTML format.
 
 ## New in Beta 1
+<pre>
 Revised logic: Main function now takes 3 numbers, which defines how many steps should be within a gradient.
 Added a min and max reference which the gradient will be constrained to.
+</pre>
 
 Was written using VS Code on linux. Compiling on Windows is untested but should work fine.
 
