@@ -10,7 +10,8 @@ Added a min and max reference which the gradient will be constrained to.
 Was written using VS Code on linux. Compiling on Windows is untested but should work fine.
 
 
-Easy to modify if a different color palette is desired. OLD Sample:
+Easy to modify if a different color palette is desired.
+### OLD Sample:
 
 [Full HTML preview with the default sample](https://ryder17z.github.io/GIMP-Crocotile-Color-Palette-Generator/preview.html) 
 
