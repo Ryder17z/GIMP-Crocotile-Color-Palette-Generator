@@ -1,10 +1,14 @@
 # GIMP/Crocotile Color Palette Generator
 "Hardcoded" C++ application/script to generate a palette file for GIMP &amp; Crocotile 3d. Also outputs a preview in HTML format.
 
+## New in Beta 1
+Revised logic: Main function now takes 3 numbers, which defines how many steps should be within a gradient.
+Added a min and max reference which the gradient will be constrained to.
+
 Was written using VS Code on linux. Compiling on Windows is untested but should work fine.
 
 
-Easy to modify if a different color palette is desired. Sample:
+Easy to modify if a different color palette is desired. OLD Sample:
 
 [Full HTML preview with the default sample](https://ryder17z.github.io/GIMP-Crocotile-Color-Palette-Generator/preview.html) 
 
