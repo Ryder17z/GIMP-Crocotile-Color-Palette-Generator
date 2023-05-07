@@ -11,6 +11,10 @@ Was written using VS Code on linux. Compiling on Windows is untested but should 
 
 
 Easy to modify if a different color palette is desired.
+
+### New sample & improved html output
+![image](https://github.com/Ryder17z/GIMP-Crocotile-Color-Palette-Generator/blob/beta1/opera_8BdenbmxUW.png?raw=true)
+
 ### OLD Sample:
 
 [Full HTML preview with the default sample](https://ryder17z.github.io/GIMP-Crocotile-Color-Palette-Generator/preview.html) 
