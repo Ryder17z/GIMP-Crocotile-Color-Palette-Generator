@@ -268,21 +268,3 @@ int main() {
 
 	return 0;
 }
-
-int main2() {
-	
-	// Define the sorting priority
-	std::regex valid_regex("^[hsv]+$"); // regex pattern to match "h", "s", or "v"
-
-	std::string priority;
-
-	std::cout << "Enter a priority string (h for hue, s for saturation, v for value): ";
-	std::getline(std::cin, priority);
-
-	while (!std::regex_match(priority, valid_regex)) {
-		std::cout << "Invalid input. Please enter a string containing only 'h', 's', or 'v': ";
-		std::getline(std::cin, priority);
-	}
-
-    return 0;
-}
